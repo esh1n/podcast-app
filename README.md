@@ -1,8 +1,8 @@
 ![Jetcaster logo](./docs/logo.png)
 
-# Jetcaster sample 🎙️
+# Podcast app based on Google Jetcaster 🎙️
 
-Jetcaster is a sample podcast app, built with [Jetpack Compose][compose]. The goal of the sample is to
+It is a sample podcast app, built with [Jetpack Compose][compose]. The goal of the sample is to
 showcase dynamic theming and full featured architecture.
 
 To try out this sample app, you need to use 
