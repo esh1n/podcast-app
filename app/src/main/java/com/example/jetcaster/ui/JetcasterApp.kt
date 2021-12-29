@@ -21,6 +21,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,12 +50,7 @@ fun JetcasterApp(
                 )
             }
             composable(Screen.Player.route) { backStackEntry ->
-                val playerViewModel: PlayerViewModel = viewModel(
-                    factory = PlayerViewModel.provideFactory(
-                        owner = backStackEntry,
-                        defaultArgs = backStackEntry.arguments
-                    )
-                )
+                val playerViewModel: PlayerViewModel = hiltViewModel()
                 PlayerScreen(playerViewModel, devicePosture, onBackPress = appState::navigateBack)
             }
         }

@@ -22,9 +22,8 @@ package com.example.jetcaster.data
  */
 val SampleFeeds = listOf(
     "https://oper.ru/audio.xml",
-    "http://podcast.govoritmoskva.ru/?feed=rss2&cat=3",
     "https://feed.podbean.com/klimzhukovpods/feed.xml",
+    "http://podcast.govoritmoskva.ru/?feed=rss2&cat=3",
     "http://nowinandroid.googledevelopers.libsynpro.com/rss",
-    "https://fragmentedpodcast.com/feed/",
     "http://feeds.feedburner.com/blogspot/AndroidDevelopersBackstage",
 )

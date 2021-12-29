@@ -17,22 +17,35 @@
 package com.example.jetcaster.ui.home.category
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.jetcaster.Graph
 import com.example.jetcaster.data.CategoryStore
 import com.example.jetcaster.data.EpisodeToPodcast
 import com.example.jetcaster.data.PodcastStore
 import com.example.jetcaster.data.PodcastWithExtraInfo
+import dagger.Module
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityComponent
+import dagger.hilt.android.components.ActivityRetainedComponent
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class PodcastCategoryViewModel(
-    private val categoryId: Long,
-    private val categoryStore: CategoryStore = Graph.categoryStore,
-    private val podcastStore: PodcastStore = Graph.podcastStore
+@Module
+@InstallIn(ActivityRetainedComponent::class)
+interface AssistedInjectModule
+
+class PodcastCategoryViewModel @AssistedInject constructor(
+    @Assisted private val categoryId: Long,
+    private val categoryStore: CategoryStore,
+    private val podcastStore: PodcastStore
 ) : ViewModel() {
     private val _state = MutableStateFlow(PodcastCategoryViewState())
 
@@ -64,6 +77,29 @@ class PodcastCategoryViewModel(
     fun onTogglePodcastFollowed(podcastUri: String) {
         viewModelScope.launch {
             podcastStore.togglePodcastFollowed(podcastUri)
+        }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(categoryId: Long): PodcastCategoryViewModel
+    }
+
+    @EntryPoint
+    @InstallIn(ActivityComponent::class)
+    interface ViewModelFactoryProvider {
+        fun podcastDetailViewModelFactory(): Factory
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    companion object {
+        fun provideFactory(
+            assistedFactory: Factory,
+            categoryId: Long
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return assistedFactory.create(categoryId) as T
+            }
         }
     }
 }

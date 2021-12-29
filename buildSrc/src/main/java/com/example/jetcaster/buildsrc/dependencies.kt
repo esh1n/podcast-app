@@ -52,6 +52,13 @@ object Libs {
         const val logging = "com.squareup.okhttp3:logging-interceptor:$version"
     }
 
+    object Hilt {
+        private const val version = "2.40.5"
+        const val hilt = "com.google.dagger:hilt-android:$version"
+        const val compiler = "com.google.dagger:hilt-compiler:$version"
+        const val plugin = "com.google.dagger:hilt-android-gradle-plugin:$version"
+    }
+
     object JUnit {
         private const val version = "4.13"
         const val junit = "junit:junit:$version"

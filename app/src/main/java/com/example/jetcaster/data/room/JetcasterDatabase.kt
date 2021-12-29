@@ -36,7 +36,7 @@ import com.example.jetcaster.data.PodcastFollowedEntry
         Category::class,
         PodcastFollowedEntry::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(DateTimeTypeConverters::class)

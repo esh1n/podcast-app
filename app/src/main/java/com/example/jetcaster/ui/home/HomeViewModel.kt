@@ -18,20 +18,22 @@ package com.example.jetcaster.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.jetcaster.Graph
 import com.example.jetcaster.data.PodcastStore
 import com.example.jetcaster.data.PodcastWithExtraInfo
 import com.example.jetcaster.data.PodcastsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeViewModel(
-    private val podcastsRepository: PodcastsRepository = Graph.podcastRepository,
-    private val podcastStore: PodcastStore = Graph.podcastStore
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val podcastsRepository: PodcastsRepository,
+    private val podcastStore: PodcastStore
 ) : ViewModel() {
     // Holds our currently selected home category
     private val selectedCategory = MutableStateFlow(HomeCategory.Discover)

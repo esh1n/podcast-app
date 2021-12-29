@@ -142,6 +142,7 @@ private fun SyndFeed.toPodcastResponse(feedUrl: String): PodcastRssResponse {
  */
 private fun SyndEntry.toEpisode(podcastUri: String): Episode {
     val entryInformation = getModule(PodcastModuleDtd) as? EntryInformation
+    val mediaUri = enclosures?.find { it.url.isNotBlank() }?.url?:"https://media.govoritmoskva.ru/media/broadcasts/audio/2021/12/21/2021_12_21_Otboy.mp3"
     return Episode(
         uri = uri,
         podcastUri = podcastUri,
@@ -150,7 +151,8 @@ private fun SyndEntry.toEpisode(podcastUri: String): Episode {
         summary = entryInformation?.summary ?: description?.value,
         subtitle = entryInformation?.subtitle,
         published = Instant.ofEpochMilli(publishedDate.time).atOffset(ZoneOffset.UTC),
-        duration = entryInformation?.duration?.milliseconds?.let { Duration.ofMillis(it) }
+        duration = entryInformation?.duration?.milliseconds?.let { Duration.ofMillis(it) },
+        mediaUri = mediaUri
     )
 }
 

@@ -16,7 +16,9 @@
 
 package com.example.jetcaster.ui.player
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +50,7 @@ import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.rounded.PauseCircleFilled
 import androidx.compose.material.icons.rounded.PlayCircleFilled
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -95,7 +99,7 @@ fun PlayerScreen(
 ) {
     val uiState = viewModel.uiState
     val devicePostureValue by devicePosture.collectAsState()
-    PlayerScreen(uiState, devicePostureValue, onBackPress)
+    PlayerScreen(uiState, devicePostureValue, viewModel::tooglePlaybackState, onBackPress)
 }
 
 /**
@@ -105,12 +109,13 @@ fun PlayerScreen(
 private fun PlayerScreen(
     uiState: PlayerUiState,
     devicePosture: DevicePosture,
+    onTooglePlayback: () -> Unit,
     onBackPress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(modifier) {
         if (uiState.podcastName.isNotEmpty()) {
-            PlayerContent(uiState, devicePosture, onBackPress)
+            PlayerContent(uiState, devicePosture, onTooglePlayback, onBackPress)
         } else {
             FullScreenLoading(modifier)
         }
@@ -122,16 +127,25 @@ private fun PlayerScreen(
 fun PlayerContent(
     uiState: PlayerUiState,
     devicePosture: DevicePosture,
+    onTooglePlayback: () -> Unit,
     onBackPress: () -> Unit
 ) {
+    val playPauseVector =
+        if (uiState.isPlaying) Icons.Rounded.PlayCircleFilled else Icons.Rounded.PauseCircleFilled
     PlayerDynamicTheme(uiState.podcastImageUrl) {
         // As the Player UI content changes considerably when the device is in tabletop posture,
         // we split the different UIs in different composables. For simpler UIs that don't change
         // much, prefer one composable that makes decisions based on the mode instead.
         if (devicePosture is DevicePosture.TableTopPosture) {
-            PlayerContentTableTop(uiState, devicePosture, onBackPress)
+            PlayerContentTableTop(
+                uiState,
+                playPauseVector,
+                devicePosture,
+                onTooglePlayback,
+                onBackPress
+            )
         } else {
-            PlayerContentRegular(uiState, onBackPress)
+            PlayerContentRegular(uiState, playPauseVector, onTooglePlayback, onBackPress)
         }
     }
 }
@@ -139,8 +153,11 @@ fun PlayerContent(
 @Composable
 private fun PlayerContentRegular(
     uiState: PlayerUiState,
+    playPauseVector: ImageVector,
+    onTooglePlayback: () -> Unit,
     onBackPress: () -> Unit
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -170,7 +187,11 @@ private fun PlayerContentRegular(
                 modifier = Modifier.weight(10f)
             ) {
                 PlayerSlider(uiState.duration)
-                PlayerButtons(Modifier.padding(vertical = 8.dp))
+                PlayerButtons(
+                    playPauseVector,
+                    Modifier.padding(vertical = 8.dp),
+                    onTooglePlayback = onTooglePlayback
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
         }
@@ -180,7 +201,9 @@ private fun PlayerContentRegular(
 @Composable
 private fun PlayerContentTableTop(
     uiState: PlayerUiState,
+    playPauseVector: ImageVector,
     tableTopPosture: DevicePosture.TableTopPosture,
+    onTooglePlayback: () -> Unit,
     onBackPress: () -> Unit
 ) {
     val hingePosition = with(LocalDensity.current) { tableTopPosture.hingePosition.top.toDp() }
@@ -223,7 +246,12 @@ private fun PlayerContentTableTop(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(10f)
             ) {
-                PlayerButtons(playerButtonSize = 92.dp, modifier = Modifier.padding(top = 8.dp))
+                PlayerButtons(
+                    playPauseVector,
+                    playerButtonSize = 92.dp,
+                    modifier = Modifier.padding(top = 8.dp),
+                    onTooglePlayback = onTooglePlayback
+                )
                 PlayerSlider(uiState.duration)
             }
         }
@@ -314,7 +342,9 @@ private fun PlayerSlider(episodeDuration: Duration?) {
 
 @Composable
 private fun PlayerButtons(
+    playPauseVector: ImageVector,
     modifier: Modifier = Modifier,
+    onTooglePlayback: () -> Unit,
     playerButtonSize: Dp = 72.dp,
     sideButtonSize: Dp = 48.dp
 ) {
@@ -342,13 +372,14 @@ private fun PlayerButtons(
             modifier = buttonsModifier
         )
         Image(
-            imageVector = Icons.Rounded.PlayCircleFilled,
+            imageVector = playPauseVector,
             contentDescription = stringResource(R.string.cd_play),
             contentScale = ContentScale.Fit,
             colorFilter = ColorFilter.tint(LocalContentColor.current),
             modifier = Modifier
                 .size(playerButtonSize)
                 .semantics { role = Role.Button }
+                .clickable(onClick = onTooglePlayback)
         )
         Image(
             imageVector = Icons.Filled.Forward30,
@@ -421,15 +452,16 @@ fun TopAppBarPreview() {
 @Composable
 fun PlayerButtonsPreview() {
     JetcasterTheme {
-        PlayerButtons()
+        PlayerButtons(Icons.Rounded.PauseCircleFilled, onTooglePlayback = {})
     }
 }
 
 @Preview
 @Composable
 fun FullScreenLoadingPreview() {
+
     JetcasterTheme {
-        PlayerButtons()
+        PlayerButtons(Icons.Rounded.PlayCircleFilled, onTooglePlayback = {})
     }
 }
 
@@ -445,6 +477,7 @@ fun PlayerScreenPreview() {
                     podcastName = "Podcast"
                 ),
                 devicePosture = DevicePosture.NormalPosture,
+                onTooglePlayback = { },
                 onBackPress = { }
             )
         }

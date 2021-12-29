@@ -56,6 +56,7 @@ val PreviewEpisodes = listOf(
         podcastUri = PreviewPodcasts[0].uri,
         title = "Episode 140: Bubbles!",
         summary = "In this episode, Romain, Chet and Tor talked with Mady Melor and Artur Tsurkan from the System UI team about... Bubbles!",
-        published = OffsetDateTime.of(2020, 6, 2, 9, 27, 0, 0, ZoneOffset.of("PST"))
+        published = OffsetDateTime.of(2020, 6, 2, 9, 27, 0, 0, ZoneOffset.of("PST")),
+        mediaUri = "https://media.govoritmoskva.ru/media/broadcasts/audio/2021/12/21/2021_12_21_Otboy.mp3"
     )
 )

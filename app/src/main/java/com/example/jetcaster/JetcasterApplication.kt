@@ -17,13 +17,7 @@
 package com.example.jetcaster
 
 import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
 
-/**
- * Application which sets up our dependency [Graph] with a context.
- */
-class JetcasterApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        Graph.provide(this)
-    }
-}
+@HiltAndroidApp
+class JetcasterApplication : Application()

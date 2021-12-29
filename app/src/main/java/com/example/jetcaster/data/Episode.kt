@@ -50,5 +50,6 @@ data class Episode(
     @ColumnInfo(name = "summary") val summary: String? = null,
     @ColumnInfo(name = "author") val author: String? = null,
     @ColumnInfo(name = "published") val published: OffsetDateTime,
+    @ColumnInfo(name = "mediaUri") val mediaUri: String,
     @ColumnInfo(name = "duration") val duration: Duration? = null
 )

@@ -29,10 +29,12 @@ import com.example.jetcaster.util.DevicePosture
 import com.example.jetcaster.util.isBookPosture
 import com.example.jetcaster.util.isTableTopPosture
 import com.google.accompanist.insets.ProvideWindowInsets
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

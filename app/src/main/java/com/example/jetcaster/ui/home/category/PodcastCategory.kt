@@ -16,6 +16,7 @@
 
 package com.example.jetcaster.ui.home.category
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -57,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -75,12 +77,14 @@ import com.example.jetcaster.data.Episode
 import com.example.jetcaster.data.EpisodeToPodcast
 import com.example.jetcaster.data.Podcast
 import com.example.jetcaster.data.PodcastWithExtraInfo
+import com.example.jetcaster.ui.MainActivity
 import com.example.jetcaster.ui.home.PreviewEpisodes
 import com.example.jetcaster.ui.home.PreviewPodcasts
 import com.example.jetcaster.ui.theme.JetcasterTheme
 import com.example.jetcaster.ui.theme.Keyline1
 import com.example.jetcaster.util.ToggleFollowPodcastIconButton
 import com.example.jetcaster.util.viewModelProviderFactoryOf
+import dagger.hilt.android.EntryPointAccessors
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -94,10 +98,16 @@ fun PodcastCategory(
      * CategoryEpisodeListViewModel requires the category as part of it's constructor, therefore
      * we need to assist with it's instantiation with a custom factory and custom key.
      */
+
+    val factory = EntryPointAccessors.fromActivity(
+        LocalContext.current as Activity,
+        PodcastCategoryViewModel.ViewModelFactoryProvider::class.java
+    ).podcastDetailViewModelFactory()
+
     val viewModel: PodcastCategoryViewModel = viewModel(
         // We use a custom key, using the category parameter
         key = "category_list_$categoryId",
-        factory = viewModelProviderFactoryOf { PodcastCategoryViewModel(categoryId) }
+        factory = viewModelProviderFactoryOf { factory.create(categoryId) }
     )
 
     val viewState by viewModel.state.collectAsState()
@@ -110,6 +120,15 @@ fun PodcastCategory(
         EpisodeList(viewState.episodes, navigateToPlayer)
     }
 }
+//@Composable
+//fun getPodcastCategoryViewModel(categoryId: Long): PodcastCategoryViewModel {
+//    val factory = EntryPointAccessors.fromActivity(
+//        LocalContext.current as Activity,
+//        PodcastCategoryViewModel.ViewModelFactoryProvider::class.java
+//    ).podcastDetailViewModelFactory()
+//
+//    return viewModel(key = "category_list_$categoryId",factory = PodcastCategoryViewModel.provideFactory(factory, categoryId))
+//}
 
 @Composable
 private fun CategoryPodcasts(

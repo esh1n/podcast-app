@@ -16,38 +16,169 @@
 
 package com.example.jetcaster.ui.player
 
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Bundle
+import android.support.v4.media.MediaBrowserCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.savedstate.SavedStateRegistryOwner
-import com.example.jetcaster.Graph
+import androidx.palette.graphics.Palette
+import com.example.jetcaster.data.Episode
 import com.example.jetcaster.data.EpisodeStore
 import com.example.jetcaster.data.PodcastStore
+import com.example.jetcaster.data.constant.K
+import com.example.jetcaster.data.service.ConnectionState
+import com.example.jetcaster.data.service.MediaPlayerService
+import com.example.jetcaster.data.service.MediaPlayerServiceConnection
+import com.example.jetcaster.util.currentPosition
+import com.example.jetcaster.util.isPlayEnabled
+import com.example.jetcaster.util.isPlaying
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.Duration
+import java.util.*
+import javax.inject.Inject
 
 data class PlayerUiState(
     val title: String = "",
     val duration: Duration? = null,
     val podcastName: String = "",
-    val podcastImageUrl: String = ""
+    val podcastImageUrl: String = "",
+    val isPlaying: Boolean = false
 )
 
 /**
  * ViewModel that handles the business logic and screen state of the Player screen
  */
-class PlayerViewModel(
+@HiltViewModel
+class PlayerViewModel @Inject constructor(
     episodeStore: EpisodeStore,
     podcastStore: PodcastStore,
+    private val serviceConnection: MediaPlayerServiceConnection,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    val currentPlayingEpisode = serviceConnection.currentPlayingEpisode
+
+    var showPlayerFullScreen by mutableStateOf(false)
+
+    var currentPlaybackPosition by mutableStateOf(0L)
+
+    val podcastIsPlaying: Boolean
+        get() = playbackState.value?.isPlaying == true
+
+    private val podcastPlayingEnabled: Boolean
+        get() = playbackState.value?.isPlayEnabled == true
+
+    val currentEpisodeProgress: Float
+        get() {
+            if (currentEpisodeDuration > 0) {
+                return currentPlaybackPosition.toFloat() / currentEpisodeDuration
+            }
+            return 0f
+        }
+
+    val currentPlaybackFormattedPosition: String
+        get() = formatLong(currentPlaybackPosition)
+
+    val currentEpisodeFormattedDuration: String
+        get() = formatLong(currentEpisodeDuration)
+
+    private val playbackState = serviceConnection.playbackState
+
+    private val currentEpisodeDuration: Long
+        get() = MediaPlayerService.currentDuration
+
+    fun playPodcast(episodes: List<Episode>, currentEpisode: Episode) {
+        serviceConnection.playPodcast(episodes)
+        if (currentEpisode.uri == currentPlayingEpisode.value?.uri) {
+            tooglePlaybackState()
+        } else {
+            serviceConnection.transportControls.playFromMediaId(currentEpisode.uri, null)
+        }
+    }
+
+    fun preparePodcastPlaying(currentEpisode: Episode) {
+        serviceConnection.playPodcast(listOf(currentEpisode))
+        if (currentEpisode.uri != currentPlayingEpisode.value?.uri) {
+            serviceConnection.transportControls.playFromMediaId(currentEpisode.uri, null)
+        } else {
+            //tooglePlaybackState
+        }
+    }
+
+    fun tooglePlaybackState() {
+        when {
+            podcastIsPlaying -> {
+                serviceConnection.transportControls.pause()
+            }
+            podcastPlayingEnabled -> {
+                serviceConnection.transportControls.play()
+            }
+        }
+    }
+
+    fun stopPlayback() {
+        serviceConnection.transportControls.stop()
+    }
+
+    fun calculateColorPalette(drawable: Drawable, onFinised: (Color) -> Unit) {
+        val bitmap = (drawable as BitmapDrawable).bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        Palette.from(bitmap).generate { palette ->
+            palette?.darkVibrantSwatch?.rgb?.let { colorValue ->
+                onFinised(Color(colorValue))
+            }
+        }
+    }
+
+    fun fastForward() {
+        serviceConnection.fastForward()
+    }
+
+    fun rewind() {
+        serviceConnection.rewind()
+    }
+
+    /**
+     * @param value 0.0 to 1.0
+     */
+    fun seekToFraction(value: Float) {
+        serviceConnection.transportControls.seekTo(
+            (currentEpisodeDuration * value).toLong()
+        )
+    }
+
+    suspend fun updateCurrentPlaybackPosition() {
+        val currentPosition = playbackState.value?.currentPosition
+        if (currentPosition != null && currentPosition != currentPlaybackPosition) {
+            currentPlaybackPosition = currentPosition
+        }
+        delay(K.PLAYBACK_POSITION_UPDATE_INTERVAL)
+        updateCurrentPlaybackPosition()
+    }
+
+    private fun formatLong(value: Long): String {
+        val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        return dateFormat.format(value)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        serviceConnection.unsubscribe(
+            K.MEDIA_ROOT_ID,
+            object : MediaBrowserCompat.SubscriptionCallback() {})
+    }
 
     // episodeUri should always be present in the PlayerViewModel.
     // If that's not the case, fail crashing the app!
@@ -60,34 +191,18 @@ class PlayerViewModel(
         viewModelScope.launch {
             val episode = episodeStore.episodeWithUri(episodeUri).first()
             val podcast = podcastStore.podcastWithUri(episode.podcastUri).first()
+            // preparePodcastPlaying(episode)
             uiState = PlayerUiState(
                 title = episode.title,
                 duration = episode.duration,
                 podcastName = podcast.title,
                 podcastImageUrl = podcast.imageUrl ?: ""
             )
-        }
-    }
-
-    /**
-     * Factory for PlayerViewModel that takes EpisodeStore and PodcastStore as a dependency
-     */
-    companion object {
-        fun provideFactory(
-            episodeStore: EpisodeStore = Graph.episodeStore,
-            podcastStore: PodcastStore = Graph.podcastStore,
-            owner: SavedStateRegistryOwner,
-            defaultArgs: Bundle? = null,
-        ): AbstractSavedStateViewModelFactory =
-            object : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(
-                    key: String,
-                    modelClass: Class<T>,
-                    handle: SavedStateHandle
-                ): T {
-                    return PlayerViewModel(episodeStore, podcastStore, handle) as T
+            serviceConnection.connectionState
+                .filter { it == ConnectionState.Connected }
+                .collect {
+                    preparePodcastPlaying(episode)
                 }
-            }
+        }
     }
 }
