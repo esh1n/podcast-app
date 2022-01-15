@@ -69,17 +69,10 @@ class PlayerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    val currentPlayingEpisode = serviceConnection.currentPlayingEpisode
-
-    var showPlayerFullScreen by mutableStateOf(false)
-
     var currentPlaybackPosition by mutableStateOf(0L)
 
     val podcastIsPlaying: Boolean
         get() = playbackState.value?.isPlaying == true
-
-    private val podcastPlayingEnabled: Boolean
-        get() = playbackState.value?.isPlayEnabled == true
 
     val currentEpisodeProgress: Float
         get() {
@@ -102,16 +95,16 @@ class PlayerViewModel @Inject constructor(
 
     fun playPodcast(episodes: List<Episode>, currentEpisode: Episode) {
         serviceConnection.playPodcast(episodes)
-        if (currentEpisode.uri == currentPlayingEpisode.value?.uri) {
+        if (currentEpisode.uri == serviceConnection.currentPlayingEpisode.value?.uri) {
             tooglePlaybackState()
         } else {
             serviceConnection.transportControls.playFromMediaId(currentEpisode.uri, null)
         }
     }
 
-    fun preparePodcastPlaying(currentEpisode: Episode) {
+    private fun preparePodcastPlaying(currentEpisode: Episode) {
         serviceConnection.playPodcast(listOf(currentEpisode))
-        if (currentEpisode.uri != currentPlayingEpisode.value?.uri) {
+        if (currentEpisode.uri != serviceConnection.currentPlayingEpisode.value?.uri) {
             serviceConnection.transportControls.playFromMediaId(currentEpisode.uri, null)
         } else {
             //tooglePlaybackState
@@ -120,13 +113,15 @@ class PlayerViewModel @Inject constructor(
 
     fun tooglePlaybackState() {
         when {
+
             podcastIsPlaying -> {
                 serviceConnection.transportControls.pause()
             }
-            podcastPlayingEnabled -> {
+            playbackState.value?.isPlayEnabled == true -> {
                 serviceConnection.transportControls.play()
             }
         }
+        uiState = uiState.copy(isPlaying = podcastIsPlaying)
     }
 
     fun stopPlayback() {
