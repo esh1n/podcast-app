@@ -5,12 +5,6 @@
 It is a sample podcast app, built with [Jetpack Compose][compose]. The goal of the sample is to
 showcase dynamic theming and full featured architecture.
 
-To try out this sample app, you need to use 
-[Android Studio Arctic Fox](https://developer.android.com/studio).
-You can clone this repository or import the
-project from Android Studio following the steps
-[here](https://developer.android.com/jetpack/compose/setup#sample).
-
 ### Status: 🚧 In progress 🚧
 
 Jetcaster is still in the early stages of development, and as such only one screen has been created so far. However,
